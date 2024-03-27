@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">SMSReceiver</string>
+    <string name="start">Старт</string>
+    <string name="stop">Стоп</string>
+    <string name="channel">Фоновая отправка</string>
+    <string name="sms_is_null">Сообщение пустое</string>
+    <string name="error_on_url">Ошибка в url</string>
+    <string name="error_on_server">Ошибка отправления запроса</string>
+    <string name="notification_title">Отправка сообщений</string>
+    <string name="url">url</string>
+    <string name="phone1">phone1</string>
+    <string name="phone2">phone2</string>
+</resources>
