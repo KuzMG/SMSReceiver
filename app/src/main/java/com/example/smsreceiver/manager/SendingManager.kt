@@ -62,10 +62,10 @@ class SendingManager {
         }, 0, PERIOD)
     }
 
-    fun sendResponse(message: String, success:Boolean ): Call {
+    fun sendResponse(message: String, success: Boolean): Call {
         val jsonData = JSONObject()
         jsonData
-            .accumulate("id",currentSms?.id)
+            .accumulate("id", currentSms?.id)
             .accumulate("success", success)
             .accumulate("msg", message)
             .accumulate("phone", currentSms?.to)
@@ -79,7 +79,6 @@ class SendingManager {
             .build()
         return client.newCall(requestStatus)
     }
-
 
 
     fun cancel() {

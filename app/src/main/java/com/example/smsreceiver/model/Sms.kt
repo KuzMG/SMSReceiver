@@ -4,7 +4,7 @@ import android.os.Parcel
 import android.os.Parcelable
 import org.json.JSONObject
 
-data class Sms(val id: Int,val to: String, val msg: String, val sim: Int) : Parcelable {
+data class Sms(val id: Int, val to: String, val msg: String, val sim: Int) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readInt()!!,
         parcel.readString()!!,

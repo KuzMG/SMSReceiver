@@ -9,7 +9,6 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.provider.Telephony
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.Button
@@ -29,7 +28,6 @@ import com.example.smsreceiver.service.SERVICE_FLAG_EXTRA
 import com.example.smsreceiver.service.SMS_EXTRA
 import com.example.smsreceiver.service.SendingService
 import com.example.smsreceiver.service.URL_EXTRA
-import java.util.TimerTask
 
 const val SETTINGS = "settings"
 private const val URL_PREF = "url"

@@ -25,6 +25,7 @@ import com.example.smsreceiver.startForegroundService
 import com.squareup.okhttp.Callback
 import com.squareup.okhttp.Request
 import com.squareup.okhttp.Response
+import kotlinx.coroutines.delay
 import java.io.IOException
 import java.util.Timer
 import java.util.TimerTask
@@ -72,12 +73,19 @@ class SendingService : Service() {
 
     private val receiverSms = object : BroadcastReceiver() {
         override fun onReceive(arg0: Context, arg1: Intent) {
+            val msg = StringBuilder()
+            var flag = false
             for (smsMessage in Telephony.Sms.Intents.getMessagesFromIntent(arg1)) {
                 if (convertPhone(smsMessage.originatingAddress!!) == sendingManager.currentSms?.to) {
-                    cancelTimer()
-                    sendResponse(smsMessage.messageBody, true)
+                    if(!flag) {
+                        cancelTimer()
+                        flag = true
+                    }
+                    msg.append(smsMessage.messageBody)
                 }
             }
+            if(flag)
+                sendResponse(msg.toString(), true)
         }
     }
 
@@ -92,6 +100,7 @@ class SendingService : Service() {
             override fun onResponse(response: Response?) {
                 if (response?.code() == 200) {
                     if (success) {
+                        Thread.sleep(2000L)
                         launchRequest()
                     } else {
                         exceptionBroadcast("информация об ошибки отправлена на сервер", false)
@@ -158,7 +167,7 @@ class SendingService : Service() {
             putExtra(MESSAGE_EXTRA, message)
             putExtra(SERVICE_FLAG_EXTRA, serviceFlag)
         })
-        editor.putBoolean(SERVICE_PREF,serviceFlag).apply()
+        editor.putBoolean(SERVICE_PREF, serviceFlag).apply()
     }
 
 
