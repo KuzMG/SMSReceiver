@@ -24,7 +24,7 @@ class SendingManager {
     var currentSms: Sms? = null
     val client = OkHttpClient()
     lateinit var request: Request
-    private val PERIOD = 5000L
+    private val PERIOD = 10000L
     private var timer: Timer? = null
 
     fun initHttp(url: String, phone1: String, phone2: String) {
@@ -62,11 +62,11 @@ class SendingManager {
         }, 0, PERIOD)
     }
 
-    fun sendResponse(message: String): Call {
+    fun sendResponse(message: String, success:Boolean ): Call {
         val jsonData = JSONObject()
         jsonData
             .accumulate("id",currentSms?.id)
-            .accumulate("success", true)
+            .accumulate("success", success)
             .accumulate("msg", message)
             .accumulate("phone", currentSms?.to)
         val requestBody = RequestBody.create(
@@ -80,26 +80,11 @@ class SendingManager {
         return client.newCall(requestStatus)
     }
 
-    fun sendResponseError(error: String): Call {
-        val jsonData = JSONObject()
-        jsonData
-            .accumulate("id",currentSms?.id)
-            .accumulate("success", false)
-            .accumulate("phone", currentSms?.to)
-            .accumulate("error", error)
-        val requestBody = RequestBody.create(
-            MediaType.parse("application/json"),
-            jsonData.toString()
-        )
-        val requestStatus = Request.Builder()
-            .url("$url/-api-/status")
-            .post(requestBody)
-            .build()
-        return client.newCall(requestStatus)
-    }
+
 
     fun cancel() {
         timer?.cancel()
         timer?.purge()
+        timer = null
     }
 }

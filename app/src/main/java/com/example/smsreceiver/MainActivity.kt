@@ -31,11 +31,11 @@ import com.example.smsreceiver.service.SendingService
 import com.example.smsreceiver.service.URL_EXTRA
 import java.util.TimerTask
 
-private const val SETTINGS = "settings"
+const val SETTINGS = "settings"
 private const val URL_PREF = "url"
 private const val PHONE1_PREF = "phone1"
 private const val PHONE2_PREF = "phone2"
-private const val SERVICE_PREF = "service"
+const val SERVICE_PREF = "service"
 
 class MainActivity : AppCompatActivity() {
 
@@ -63,7 +63,8 @@ class MainActivity : AppCompatActivity() {
             when {
                 resultCode == Activity.RESULT_OK -> {
                     smsInfoTextView.setText(message)
-                    viewModel.serviceFlag = serviceFlag
+                    if(viewModel.serviceFlag)
+                        viewModel.serviceFlag = serviceFlag
                 }
             }
         }

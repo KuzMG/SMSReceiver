@@ -7,12 +7,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.os.IBinder
 import android.provider.Telephony
 import androidx.core.app.NotificationCompat
 import com.example.smsreceiver.MainActivity
 import com.example.smsreceiver.NOTIFICATION_CHANNEL_ID
 import com.example.smsreceiver.R
+import com.example.smsreceiver.SERVICE_PREF
+import com.example.smsreceiver.SETTINGS
 import com.example.smsreceiver.convertPhone
 import com.example.smsreceiver.getSmsManager
 import com.example.smsreceiver.manager.SendingManager
@@ -41,6 +44,8 @@ class SendingService : Service() {
     private val sendingManager = SendingManager()
     private var timerDelayResponse: Timer? = null
     private var receiverSmsStatusFlag = false
+    private lateinit var settings: SharedPreferences
+    private lateinit var editor: SharedPreferences.Editor
     private val receiverSmsStatus = object : BroadcastReceiver() {
         override fun onReceive(arg0: Context, arg1: Intent) {
             sendingManager.cancel()
@@ -53,13 +58,13 @@ class SendingService : Service() {
                     timerDelayResponse = Timer()
                     timerDelayResponse?.schedule(object : TimerTask() {
                         override fun run() {
-                            sendResponseError("Ответное СМС не пришло")
+                            sendResponse("Ответное СМС не пришло", false)
                         }
                     }, 2 * 60 * 1000)
                 }
 
                 else -> {
-                    sendResponseError("Сообщение не отправилось")
+                    sendResponse("Сообщение не отправилось", false)
                 }
             }
         }
@@ -70,39 +75,15 @@ class SendingService : Service() {
             for (smsMessage in Telephony.Sms.Intents.getMessagesFromIntent(arg1)) {
                 if (convertPhone(smsMessage.originatingAddress!!) == sendingManager.currentSms?.to) {
                     cancelTimer()
-                    sendResponse(smsMessage.messageBody)
+                    sendResponse(smsMessage.messageBody, true)
                 }
             }
         }
     }
 
-    fun sendResponseError(error: String) {
-        sendingManager.sendResponseError(error).enqueue(object : Callback {
-            override fun onFailure(request: Request?, e: IOException?) {
-                exceptionBroadcast(
-                    "Отправить ошибку '$error' на сервер не удалось из-за ${e?.message}",
-                    false
-                )
-                stopSelf()
-            }
 
-            override fun onResponse(response: Response?) {
-                if (response?.code() == 200) {
-                    exceptionBroadcast("Ошибка отправлена на сервер", false)
-                } else {
-                    exceptionBroadcast(
-                        "Ошибка $error не отправилась на сервер из-за ${response?.code()}",
-                        false
-                    )
-                }
-                stopSelf()
-            }
-        })
-
-    }
-
-    fun sendResponse(message: String) {
-        sendingManager.sendResponse(message).enqueue(object : Callback {
+    fun sendResponse(message: String, success: Boolean) {
+        sendingManager.sendResponse(message, success).enqueue(object : Callback {
             override fun onFailure(request: Request?, e: IOException?) {
                 exceptionBroadcast("ошибка отправки ответа на сервер ${e?.message}", false)
                 stopSelf()
@@ -110,7 +91,12 @@ class SendingService : Service() {
 
             override fun onResponse(response: Response?) {
                 if (response?.code() == 200) {
-                    launchRequest()
+                    if (success) {
+                        launchRequest()
+                    } else {
+                        exceptionBroadcast("информация об ошибки отправлена на сервер", false)
+                        stopSelf()
+                    }
                 } else {
                     exceptionBroadcast(
                         "ошибка отправки ответа на сервер ${response?.code()}",
@@ -121,7 +107,8 @@ class SendingService : Service() {
             }
         })
     }
-    fun cancelTimer(){
+
+    fun cancelTimer() {
         timerDelayResponse?.cancel()
         timerDelayResponse?.purge()
         timerDelayResponse = null
@@ -129,6 +116,8 @@ class SendingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
+            settings = getSharedPreferences(SETTINGS, MODE_PRIVATE)
+            editor = settings.edit()
             val pendingIntent = PendingIntent.getActivity(
                 this,
                 0,
@@ -169,6 +158,7 @@ class SendingService : Service() {
             putExtra(MESSAGE_EXTRA, message)
             putExtra(SERVICE_FLAG_EXTRA, serviceFlag)
         })
+        editor.putBoolean(SERVICE_PREF,serviceFlag).apply()
     }
 
 
@@ -181,15 +171,17 @@ class SendingService : Service() {
         receiverSmsStatusFlag = true
         registerReceiverCompat(receiverSmsStatus, IntentFilter(SENDED))
 
-        smsService?.sendTextMessage(sms.to, null, sms.msg, sendingPI,null)
+        smsService?.sendTextMessage(sms.to, null, sms.msg, sendingPI, null)
 
     }
 
 
     override fun onDestroy() {
         super.onDestroy()
-        if (receiverSmsStatusFlag)
+        if (receiverSmsStatusFlag) {
             unregisterReceiver(receiverSmsStatus)
+            receiverSmsStatusFlag = false
+        }
         cancelTimer()
         sendingManager.cancel()
     }
